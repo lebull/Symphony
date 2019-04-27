@@ -5,14 +5,32 @@ import binascii
 #from server import sendMessage
 import server
 import time
+import sys
 
-print('\navailable devices:')
+from argparse import ArgumentParser
+
+parser = ArgumentParser()
+parser.add_argument("-i", "--index", dest="index",
+                    help="Audio Device Index", metavar="INDEX")
+args = parser.parse_args()
 
 def listDevices():
     pyaudio_instance = pyaudio.PyAudio()
     for i in range(pyaudio_instance.get_device_count()):
         print pyaudio_instance.get_device_info_by_index(i)
-listDevices()
+
+if(args.index == None):
+    listDevices()
+    index = 0
+else:
+    index = args.index
+
+
+print(index)
+
+# print('\navailable devices:')
+
+
 
 def compactArrayWithAverage(inputArray, endSize):
     n_averaged_elements = int(len(inputArray)/(endSize/3))
@@ -31,6 +49,9 @@ CHUNK = 2048 # number of data points to read at a time
 RATE = 44100 # time resolution of the recording device (Hz)
 
 p=pyaudio.PyAudio() # start the PyAudio class
+
+channelIndex = 1
+
 stream=p.open(  format=pyaudio.paInt16,
                 channels=1,
                 rate=RATE,
@@ -117,19 +138,3 @@ def exit():
     p.terminate()
 signal.signal(signal.SIGINT, exit)
 signal.signal(signal.SIGTERM, exit)
-
-
-# def valid_input_devices(self):
-#         """
-#         See which devices can be opened for microphone input.
-#         call this when no PyAudio object is loaded.
-#         """
-#         mics=[]
-#         for device in range(self.p.get_device_count()):
-#             if self.valid_test(device):
-#                 mics.append(device)
-#         if len(mics)==0:
-#             print("no microphone devices found!")
-#         else:
-#             print("found %d microphone devices: %s"%(len(mics),mics))
-#         return mics
