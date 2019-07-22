@@ -17,6 +17,7 @@ from server import sendMessage
 #Const
 CHUNK = 2048 # number of data points to read at a time
 RATE = 44100 # time resolution of the recording device (Hz)
+LIGHTCOUNT= 7 * 8
 
 #Get args
 parser = ArgumentParser()
@@ -64,7 +65,8 @@ class Symphony(Thread):
                 output=False,
                 input_device_index=index,
                 frames_per_buffer=CHUNK)
-        self.ftt = []
+        
+        self.ftt = [0] * LIGHTCOUNT * 3
         self.lastMessage = None
 
     def getAudioSpectrum(self):
@@ -78,13 +80,14 @@ class Symphony(Thread):
         freq = np.fft.fftfreq(CHUNK,1.0/RATE)
         freq = freq[:int(len(freq)/2)] # keep only first half
 
-        self.fft = compactArrayWithAverage(self.fft, 168)
+        self.fft = compactArrayWithAverage(self.fft, LIGHTCOUNT * 3)
         
         # uncomment this if you want to see what the freq vs FFT looks like
-        # plt.plot(freq,self.fft)
-        # plt.axis([0,4000,None,None])
-        # plt.show()
-        # plt.close()
+        if(self.fft == None):
+            plt.plot(freq,self.fft)
+            plt.axis([0,4000,None,None])
+            plt.show()
+
 
     def run(self):
         # create a numpy array holding a single read of audio data
@@ -120,17 +123,18 @@ class Symphony(Thread):
             if(self.lastMessage):
                 for index, lastVal in enumerate(message):
                     worstCaseFrameToDrop = 3
-                    message[index] = max([message[index], lastMessage[index] - (255/worstCaseFrameToDrop)])
+                    message[index] = max([message[index], self.lastMessage[index] - (255/worstCaseFrameToDrop)])
 
             #server.sendMessage(bytearray(message))
             self.lastMessage = message
             time.sleep(1.0/24)
 
     # close the stream gracefully
-    def exit(self):
+    def exit(self, a, b):
         self.stream.stop_stream()
         self.stream.close()
         self._pyAudio.terminate()
+        plt.close()
         
 thread = Symphony()
 thread.start()
