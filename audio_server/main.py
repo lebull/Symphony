@@ -49,7 +49,10 @@ def compactArrayWithAverage(inputArray, endSize):
     return averaged_array[0:endSize]
 
 class Symphony(Thread):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+
+        super(Symphony, self).__init__()
+
         self._pyAudio=pyaudio.PyAudio() # start the PyAudio class
         signal.signal(signal.SIGINT, self.exit)
         signal.signal(signal.SIGTERM, self.exit)
@@ -64,8 +67,8 @@ class Symphony(Thread):
         self.ftt = []
         self.lastMessage = None
 
-    def getAudioSpectrum():
-        data = np.fromstring(stream.read(CHUNK),dtype=np.int16)
+    def getAudioSpectrum(self):
+        data = np.fromstring(self.stream.read(CHUNK),dtype=np.int16)
         #data = data * np.hanning(len(data)) # smooth the FFT by windowing data
         self.fft = abs(np.fft.fft(data).real)
 
@@ -78,15 +81,15 @@ class Symphony(Thread):
         self.fft = compactArrayWithAverage(self.fft, 168)
         
         # uncomment this if you want to see what the freq vs FFT looks like
-        plt.plot(freq,fft)
-        plt.axis([0,4000,None,None])
-        plt.show()
-        plt.close()
+        # plt.plot(freq,self.fft)
+        # plt.axis([0,4000,None,None])
+        # plt.show()
+        # plt.close()
 
     def run(self):
         # create a numpy array holding a single read of audio data
         while True: #to it a few times just to see
-            getAudioSpectrum()
+            self.getAudioSpectrum()
             #Filter FFT Result
             output = [ max((int(dataPoint/1024)**(2.5))/16, 0) for dataPoint in self.ftt]
 
@@ -129,7 +132,8 @@ class Symphony(Thread):
         self.stream.close()
         self._pyAudio.terminate()
         
-Symphony().start()
+thread = Symphony()
+thread.start()
 while(True):
     time.sleep(0.5)
 
