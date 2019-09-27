@@ -45,7 +45,7 @@ def compactArrayWithAverage(inputArray, endSize):
 
 np.set_printoptions(suppress=True) # don't use scientific notation
 
-CHUNK = 2048 # number of data points to read at a time
+CHUNK = 1024 # number of data points to read at a time
 RATE = 44100 # time resolution of the recording device (Hz)
 
 p=pyaudio.PyAudio() # start the PyAudio class
@@ -56,8 +56,8 @@ stream=p.open(  format=pyaudio.paInt16,
                 channels=1,
                 rate=RATE,
                 input=True,
-                output=False,
-                input_device_index=2,
+                output=True,
+                input_device_index=1,
                 frames_per_buffer=CHUNK)
 
 def getAudioSpectrum():
