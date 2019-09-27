@@ -1,48 +1,34 @@
+
 import pyaudio
 import numpy as np
 import math
-import binascii
-#from server import sendMessage
-import server
 import time
 import sys
-
+import signal
 from argparse import ArgumentParser
+from symphony import Symphony
+from server import sendMessage
 
+
+#Get args
 parser = ArgumentParser()
 parser.add_argument("-i", "--index", dest="index",
                     help="Audio Device Index", metavar="INDEX")
 args = parser.parse_args()
 
-def listDevices():
-    pyaudio_instance = pyaudio.PyAudio()
-    for i in range(pyaudio_instance.get_device_count()):
-        print pyaudio_instance.get_device_info_by_index(i)
+#List devices
+pyaudio_instance = pyaudio.PyAudio()
+for i in range(pyaudio_instance.get_device_count()):
+    print("{}\n\n".format(pyaudio_instance.get_device_info_by_index(i)))
 
 if(args.index == None):
-    listDevices()
     index = 0
 else:
-    index = args.index
+    index = int(args.index)
 
+print("Using Device with index {}".format(index))
 
-print(index)
-
-# print('\navailable devices:')
-
-
-
-def compactArrayWithAverage(inputArray, endSize):
-    n_averaged_elements = int(len(inputArray)/(endSize/3))
-    averaged_array = []
-    
-    for i in range(0, len(inputArray), n_averaged_elements):
-        slice_from_index = i
-        slice_to_index = slice_from_index + n_averaged_elements
-        averaged_array.append(np.max(inputArray[slice_from_index:slice_to_index]))
-    return averaged_array[0:endSize]
-    
-
+#np setup
 np.set_printoptions(suppress=True) # don't use scientific notation
 
 CHUNK = 1024 # number of data points to read at a time
@@ -65,16 +51,17 @@ def getAudioSpectrum():
     #data = data * np.hanning(len(data)) # smooth the FFT by windowing data
     fft = abs(np.fft.fft(data).real)
 
-    halfResultFtt = fft[100:int(len(fft/2))] 
-    fullResultFtt = halfResultFtt + np.flip(halfResultFtt)
+    #halfResultFtt = fft[100:int(len(fft/2))] 
+    #fullResultFtt = halfResultFtt + np.flip(halfResultFtt)
 
     # freq = np.fft.fftfreq(CHUNK,1.0/RATE)
     # freq = freq[:int(len(freq)/2)] # keep only first half
-    fft = compactArrayWithAverage(fft, 168)
+    #fft = compactArrayWithAverage(fft, 168)
     return fft
 
 
 lastMessage = None
+
 
 
 # create a numpy array holding a single read of audio data
@@ -116,7 +103,7 @@ while True: #to it a few times just to see
             worstCaseFrameToDrop = 3
             message[index] = max([message[index], lastMessage[index] - (255/worstCaseFrameToDrop)])
 
-    server.sendMessage(bytearray(message))
+    sendMessage(bytearray(message))
     lastMessage = message
     #print("outputRange: ({}\t: {})\tfftRange: ({}\t: {})".format(min(message), max(message), min(output), max(output)))
     #print message
@@ -129,12 +116,16 @@ while True: #to it a few times just to see
     # plt.show()
     # plt.close()
 
-    # close the stream gracefully
 
+def close(a, b):
+    print("Closing Stream")
+    thread.exit()
 
-def exit():
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
-signal.signal(signal.SIGINT, exit)
-signal.signal(signal.SIGTERM, exit)
+thread = Symphony(index)
+thread.setName("Symphony.py")
+
+signal.signal(signal.SIGINT, close)
+signal.signal(signal.SIGTERM, close)
+thread.start()
+thread.join()
+
