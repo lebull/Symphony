@@ -7,7 +7,18 @@ import sys
 import signal
 from argparse import ArgumentParser
 from symphony import Symphony
-from server import sendMessage
+
+import socket
+
+UDP_IP = "192.168.1.128"
+UDP_PORT = 4210
+# MESSAGE = "Hello, World!"
+
+# print "UDP target IP:", UDP_IP
+# print "UDP target port:", UDP_PORT
+# print "message:", MESSAGE
+                    # Internet       # UDP
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) 
 
 
 #Get args
@@ -46,6 +57,10 @@ stream=p.open(  format=pyaudio.paInt16,
                 input_device_index=1,
                 frames_per_buffer=CHUNK)
 
+def sendMessage(message):
+    #print("send {} things".format(len(message)))
+    sock.sendto(message, (UDP_IP, UDP_PORT))
+
 def getAudioSpectrum():
     data = np.fromstring(stream.read(CHUNK),dtype=np.int16)
     #data = data * np.hanning(len(data)) # smooth the FFT by windowing data
@@ -59,10 +74,7 @@ def getAudioSpectrum():
     #fft = compactArrayWithAverage(fft, 168)
     return fft
 
-
 lastMessage = None
-
-
 
 # create a numpy array holding a single read of audio data
 while True: #to it a few times just to see
@@ -95,27 +107,23 @@ while True: #to it a few times just to see
         message.append(int(b))
 
     message = message[0:168]
-
-    #print message
-
-    if(lastMessage):
-        for index, lastVal in enumerate(message):
-            worstCaseFrameToDrop = 3
-            message[index] = max([message[index], lastMessage[index] - (255/worstCaseFrameToDrop)])
-
     sendMessage(bytearray(message))
-    lastMessage = message
+
+    # if(lastMessage):
+    #     for index, lastVal in enumerate(message):
+    #         worstCaseFrameToDrop = 3
+    #         message[index] = max([message[index], lastMessage[index] - (255/worstCaseFrameToDrop)])
+
+    #lastMessage = message
     #print("outputRange: ({}\t: {})\tfftRange: ({}\t: {})".format(min(message), max(message), min(output), max(output)))
     #print message
     time.sleep(1.0/24)
     
-
     # uncomment this if you want to see what the freq vs FFT looks like
     # plt.plot(freq,fft)
     # plt.axis([0,4000,None,None])
     # plt.show()
     # plt.close()
-
 
 def close(a, b):
     print("Closing Stream")
